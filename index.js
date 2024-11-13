@@ -161,6 +161,7 @@ const smtpServer = new SMTPServer({
   async onData(stream, session, callback) {
     let emailData = '';
     stream.on('data', (chunk) => {
+      console.log('emailDataemailData',emailData)
       emailData += chunk.toString();
     });
 
@@ -169,7 +170,7 @@ const smtpServer = new SMTPServer({
         // Parse the email using mailparser
         const parsed = await simpleParser(emailData);
         const { from, to, cc, bcc, subject, text, html, attachments } = parsed;
-
+        console.log(from, to, cc, bcc, subject, text, html, attachments)
         // Find the user by the recipient's email address
         const recipient = to && to.value && to.value[0].address;
         const user = await User.findOne({ email: recipient });
