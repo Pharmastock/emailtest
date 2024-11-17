@@ -156,12 +156,25 @@ const smtpPort = process.env.SMTP_PORT || 25;
 // Start SMTP Server
 //
 const smtpServer = new SMTPServer({
+  allowInsecureAuth: true,
   authOptional: true,
+  onConnect(session, cb) {
+    console.log('onconnect', session.id)
+    cb()
+  },
+  onMailFrom(address, session, cb) {
+    console.log('onMailFrom', address.address, session.id)
+    cb()
+  },
+  onRcptTo(address, session, cb) {
+    console.log('onRcptTo', address.address, session.id)
+    cb()
+  },
 
   async onData(stream, session, callback) {
     let emailData = '';
     stream.on('data', (chunk) => {
-      console.log('emailDataemailData',emailData)
+      console.log('emailDataemailData', emailData)
       emailData += chunk.toString();
     });
 
