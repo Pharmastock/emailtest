@@ -378,6 +378,18 @@ const smtpServer = new SMTPServer({
   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
   authOptional: true,
+  onConnect(session, cb) {
+    console.log('onconnect', session.id)
+    cb()
+  },
+  onMailFrom(address, session, cb) {
+    console.log('onMailFrom', address.address, session.id)
+    cb()
+  },
+  onRcptTo(address, session, cb) {
+    console.log('onRcptTo', address.address, session.id)
+    cb()
+  },
 
   async onData(stream, session, callback) {
     console.log('here in check function while we receive mail.')
