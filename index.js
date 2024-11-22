@@ -544,98 +544,182 @@
 
 
 
+// Imports
+const express = require('express');
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const cors = require('cors');
 const { SMTPServer } = require('smtp-server');
+const { simpleParser } = require('mailparser');
 const fs = require('fs');
 const path = require('path');
-const mongoose = require('mongoose');
-const crypto = require('crypto');
-const dotenv = require('dotenv');
+const cron = require('node-cron');
 
+// Import Models
+const Email = require('./Model/EmailModel');
+const User = require('./Model/UserModel');
+
+// Import Routes
+const authRoutes = require('./routes/authRoutes');
+const emailRoutes = require('./routes/emailRoutes');
+const replyemailRoutes = require('./routes/replyemailRoutes');
+const trashManageRoutes = require('./routes/moveToTrashRoute');
+const endPoint = require('./routes/index');
+
+// Load Environment Variables
 dotenv.config();
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Database connected'))
-  .catch(err => console.error('Database connection error:', err));
+// MongoDB Connection
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('MongoDB connected successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+    process.exit(1);
+  }
+};
 
-// Email schema and model
-const emailSchema = new mongoose.Schema({
-  from: String,
-  to: [String],
-  cc: [String],
-  bcc: [String],
-  subject: String,
-  body: String,
-  receivedAt: { type: Date, default: Date.now }
+// Initialize Express App
+const app = express();
+connectDB();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// CORS Configuration
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', process.env.DOMAIN || 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
 });
 
-const Email = mongoose.model('Email', emailSchema);
+// Routes
+app.use('/api', endPoint);
+app.use('/api/user', authRoutes);
+app.use('/api/email', emailRoutes);
+app.use('/api/replyemail', replyemailRoutes);
+app.use('/api/trashmanageemail', trashManageRoutes);
 
-// SMTP Server Setup
-const server = new SMTPServer({
- 
-  secure: true, // Enables TLS
-  key: fs.readFileSync('./cert/key.pem'),
-  cert: fs.readFileSync('./cert/cert.pem'),
-  onAuth(auth, session, callback) {
-    console.log('mail check')
-    // Basic authentication logic
-    const { username, password } = auth;
-    if (username === process.env.SMTP_USER && password === process.env.SMTP_PASS) {
-      return callback(null, { user: username });
-    } else {
-      return callback(new Error('Invalid username or password'));
-    }
-  },
-  onData(stream, session, callback) {
-    console.log('mail check')
-    let emailContent = '';
-    stream.on('data', chunk => {
-      emailContent += chunk.toString();
+// Scheduled Task for Deleting Emails
+cron.schedule('0 0 * * *', async () => {
+  console.log('Running scheduled email deletion task...');
+  await permanentlyDeleteEmails();
+});
+
+// SSL Configuration for SMTP
+const sslOptions = {
+  key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+};
+
+// SMTP Server
+const smtpServer = new SMTPServer({
+  secure: true,
+  ...sslOptions,
+  authOptional: true,
+
+  async onData(stream, session, callback) {
+    let emailData = '';
+    stream.on('data', (chunk) => {
+      emailData += chunk.toString();
     });
 
     stream.on('end', async () => {
-      console.log('mail check')
       try {
-        // Parse email content (basic)
-        const mail = parseMail(emailContent);
+        const parsed = await simpleParser(emailData);
+        const { from, to, cc, bcc, subject, text, html, attachments } = parsed;
 
-        // Save email to database
-        const email = new Email(mail);
+        const recipientEmail = to?.value?.[0]?.address;
+        const user = await User.findOne({ email: recipientEmail });
+
+        if (!user) {
+          console.error(`User not found for email: ${recipientEmail}`);
+          return callback(new Error(`Recipient ${recipientEmail} not found`));
+        }
+
+        const email = new Email({
+          from: from.text,
+          to: to.value.map((item) => item.address),
+          cc: cc ? cc.value.map((item) => item.address) : [],
+          bcc: bcc ? bcc.value.map((item) => item.address) : [],
+          subject,
+          text,
+          html,
+          folder: 'inbox',
+          starred: false,
+          conversation: false,
+          watched: false,
+          user_id: user._id,
+        });
+
+        if (attachments?.length > 0) {
+          email.attachments = [];
+          const uploadDir = path.join(__dirname, 'uploads');
+          if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+          for (const attachment of attachments) {
+            const filePath = path.join(uploadDir, attachment.filename);
+            fs.writeFileSync(filePath, attachment.content);
+            email.attachments.push({ filename: attachment.filename, path: filePath });
+          }
+        }
+
         await email.save();
-
-        // Save email to local storage
-        const mailId = crypto.randomBytes(16).toString('hex');
-        const filePath = path.join(__dirname, 'mail_storage', `${mailId}.eml`);
-        fs.writeFileSync(filePath, emailContent);
-
-        callback(null); // Success
+        callback(null);
       } catch (error) {
-        console.error('Error processing email:', error);
-        callback(error); // Fail
+        console.error('Error processing email:', error.message);
+        callback(new Error('Error processing email data'));
       }
     });
   },
+
+  onError(err) {
+    console.error('SMTP server error:', err.message);
+  },
 });
 
-server.listen(465, () => {
-  console.log('SMTP server is running on port 465');
-});
-
-// Helper function to parse email content
-function parseMail(rawMail) {
-  const [header, body] = rawMail.split('\r\n\r\n');
-  const headers = header.split('\r\n');
-  const mail = { from: '', to: [], cc: [], bcc: [], subject: '', body };
-
-  headers.forEach(line => {
-    if (line.startsWith('From:')) mail.from = line.replace('From:', '').trim();
-    if (line.startsWith('To:')) mail.to = line.replace('To:', '').split(',').map(addr => addr.trim());
-    if (line.startsWith('Cc:')) mail.cc = line.replace('Cc:', '').split(',').map(addr => addr.trim());
-    if (line.startsWith('Bcc:')) mail.bcc = line.replace('Bcc:', '').split(',').map(addr => addr.trim());
-    if (line.startsWith('Subject:')) mail.subject = line.replace('Subject:', '').trim();
-  });
-
-  mail.body = body.trim();
-  return mail;
+// Ensure the uploads directory exists
+if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
+  fs.mkdirSync(path.join(__dirname, 'uploads'));
 }
+
+// Start SMTP Server
+const smtpPort = process.env.SMTP_PORT || 465;
+smtpServer.listen(smtpPort, (err) => {
+  if (err) {
+    console.error(`Failed to start SMTP server on port ${smtpPort}:`, err.message);
+  } else {
+    console.log(`Secure SMTP server running on port ${smtpPort}`);
+  }
+});
+
+// HTTP Server
+const httpPort = process.env.PORT || 3000;
+const httpServer = app.listen(httpPort, () => {
+  console.log(`HTTP server running on port ${httpPort}`);
+});
+
+// Graceful Shutdown
+const gracefulShutdown = () => {
+  console.log('Graceful shutdown initiated...');
+  if (httpServer) {
+    httpServer.close(() => console.log('HTTP server closed gracefully.'));
+  }
+  if (smtpServer) {
+    smtpServer.close(() => console.log('SMTP server closed gracefully.'));
+  }
+  process.exit(0);
+};
+
+process.once('SIGUSR2', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+
+module.exports = app;
