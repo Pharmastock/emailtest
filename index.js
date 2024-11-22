@@ -293,169 +293,349 @@
 
 
 
-// Imports33
-const express = require('express');
-const dotenv = require('dotenv');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // Imports33
+// const express = require('express');
+// const dotenv = require('dotenv');
+// const { SMTPServer } = require('smtp-server');
+// const mongoose = require('mongoose');
+// const cors = require('cors');
+// const { simpleParser } = require('mailparser');
+// const fs = require('fs');
+// const path = require('path');
+// const cron = require('node-cron');
+// const authRoutes = require('./routes/authRoutes');
+// const endPoint = require('./routes/index');
+// const emailRoutes = require('./routes/emailRoutes');
+// const replyemailRoutes = require('./routes/replyemailRoutes');
+// const trashManageRoutes = require('./routes/moveToTrashRoute');
+// const Email = require('./Model/EmailModel');
+// const User = require('./Model/UserModel');
+// const { permanentlyDeleteEmails } = require('./utilities/deleteOnDateMail');
+
+// // Environment Configuration
+// dotenv.config();
+
+// // MongoDB Connection
+// const connectDB = async () => {
+//   try {
+//     await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+//     console.log('MongoDB connected successfully');
+//   } catch (error) {
+//     console.error('MongoDB connection error:', error.message);
+//     process.exit(1); // Exit on DB connection failure
+//   }
+// };
+
+// // Initialize Express App
+// const app = express();
+
+// connectDB();
+
+// // Middleware
+// app.use(cors());
+// app.use(express.json());
+// app.use(express.static(path.join(__dirname, 'public')));
+
+// // CORS Settings for Allowed Origins
+// app.use((req, res, next) => {
+//   res.setHeader('Access-Control-Allow-Origin', process.env.DOMAIN || 'http://localhost:3000');
+//   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT');
+//   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+//   next();
+// });
+
+// // Routes
+// app.use('/api', endPoint);
+// app.use('/api/user', authRoutes);
+// app.use('/api/email', emailRoutes);
+// app.use('/api/replyemail', replyemailRoutes);
+// app.use('/api/trashmanageemail', trashManageRoutes);
+
+// // 404 Error Handler
+// app.use((req, res) => {
+//   res.status(404).json({ error: 'Resource not found. Please check the URL.' });
+// });
+
+// // General Error Handler
+// app.use((err, req, res, next) => {
+//   console.error('Error:', err);
+//   res.status(err.status || 500).json({
+//     message: err.message || 'Internal Server Error',
+//     error: process.env.NODE_ENV === 'development' ? err : {}
+//   });
+// });
+
+// // HTTP Server
+// const httpPort = process.env.PORT || 3000;
+// app.listen(httpPort, () => {
+//   console.log(`HTTP server running on port ${httpPort}`);
+// });
+
+// // SMTP Server with SSL
+// const smtpPort = process.env.SMTP_PORT || 465; // SSL port
+// const smtpServer = new SMTPServer({
+//   secure: true, // Enforces SSL
+//   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+//   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+//   authOptional: true,
+//   onConnect(session, cb) {
+//     console.log('onconnect', session.id)
+//     cb()
+//   },
+//   onMailFrom(address, session, cb) {
+//     console.log('onMailFrom', address.address, session.id)
+//     cb()
+//   },
+//   onRcptTo(address, session, cb) {
+//     console.log('onRcptTo', address.address, session.id)
+//     cb()
+//   },
+
+//   async onData(stream, session, callback) {
+//     console.log('here in check function while we receive mail.')
+//     let emailData = '';
+//     stream.on('data', (chunk) => {
+//       emailData += chunk.toString();
+//     });
+
+//     stream.on('end', async () => {
+//       try {
+//         // Parse the email using mailparser
+//         const parsed = await simpleParser(emailData);
+//         const { from, to, subject, text, html, attachments } = parsed;
+
+//         // Get recipient email
+//         const recipient = to && to.value && to.value[0].address;
+//         const user = await User.findOne({ email: recipient });
+
+//         if (!user) {
+//           console.error(`User not found for recipient email: ${recipient}`);
+//           return callback(new Error(`Recipient ${recipient} not found`));
+//         }
+
+//         // Prepare email document
+//         const email = new Email({
+//           from: from.text,
+//           to: to.value.map((item) => item.address),
+//           subject,
+//           text,
+//           html,
+//           folder: 'inbox',
+//           user_id: user._id
+//         });
+
+//         // Handle attachments
+//         if (attachments && attachments.length > 0) {
+//           email.attachments = [];
+
+//           for (const attachment of attachments) {
+//             const filePath = path.join(__dirname, 'uploads', attachment.filename);
+//             fs.writeFileSync(filePath, attachment.content); // Save the attachment
+//             email.attachments.push({ filename: attachment.filename, path: filePath });
+//           }
+//         }
+
+//         // Save email
+//         await email.save();
+//         callback(null);
+//       } catch (error) {
+//         console.error('Error processing email:', error.message);
+//         callback(new Error('Error processing email data'));
+//       }
+//     });
+//   },
+
+//   onError(err) {
+//     console.error('SMTP server error:', err.message);
+//   }
+// });
+
+// // Ensure uploads directory exists
+// if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
+//   fs.mkdirSync(path.join(__dirname, 'uploads'));
+// }
+
+// // Start SMTP Server
+// smtpServer.listen(smtpPort, () => {
+//   console.log(`SMTP server running on port ${smtpPort}`);
+// });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const { SMTPServer } = require('smtp-server');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const { simpleParser } = require('mailparser');
 const fs = require('fs');
 const path = require('path');
-const cron = require('node-cron');
-const authRoutes = require('./routes/authRoutes');
-const endPoint = require('./routes/index');
-const emailRoutes = require('./routes/emailRoutes');
-const replyemailRoutes = require('./routes/replyemailRoutes');
-const trashManageRoutes = require('./routes/moveToTrashRoute');
-const Email = require('./Model/EmailModel');
-const User = require('./Model/UserModel');
-const { permanentlyDeleteEmails } = require('./utilities/deleteOnDateMail');
+const mongoose = require('mongoose');
+const crypto = require('crypto');
+const dotenv = require('dotenv');
 
-// Environment Configuration
 dotenv.config();
 
-// MongoDB Connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error.message);
-    process.exit(1); // Exit on DB connection failure
-  }
-};
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Database connected'))
+  .catch(err => console.error('Database connection error:', err));
 
-// Initialize Express App
-const app = express();
-
-connectDB();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// CORS Settings for Allowed Origins
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', process.env.DOMAIN || 'http://localhost:3000');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
+// Email schema and model
+const emailSchema = new mongoose.Schema({
+  from: String,
+  to: [String],
+  cc: [String],
+  bcc: [String],
+  subject: String,
+  body: String,
+  receivedAt: { type: Date, default: Date.now }
 });
 
-// Routes
-app.use('/api', endPoint);
-app.use('/api/user', authRoutes);
-app.use('/api/email', emailRoutes);
-app.use('/api/replyemail', replyemailRoutes);
-app.use('/api/trashmanageemail', trashManageRoutes);
+const Email = mongoose.model('Email', emailSchema);
 
-// 404 Error Handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Resource not found. Please check the URL.' });
-});
-
-// General Error Handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    message: err.message || 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err : {}
-  });
-});
-
-// HTTP Server
-const httpPort = process.env.PORT || 3000;
-app.listen(httpPort, () => {
-  console.log(`HTTP server running on port ${httpPort}`);
-});
-
-// SMTP Server with SSL
-const smtpPort = process.env.SMTP_PORT || 465; // SSL port
-const smtpServer = new SMTPServer({
-  secure: true, // Enforces SSL
-  key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
-  authOptional: true,
-  onConnect(session, cb) {
-    console.log('onconnect', session.id)
-    cb()
+// SMTP Server Setup
+const server = new SMTPServer({
+ 
+  secure: true, // Enables TLS
+  key: fs.readFileSync('./cert/key.pem'),
+  cert: fs.readFileSync('./cert/cert.pem'),
+  onAuth(auth, session, callback) {
+    console.log('mail check')
+    // Basic authentication logic
+    const { username, password } = auth;
+    if (username === process.env.SMTP_USER && password === process.env.SMTP_PASS) {
+      return callback(null, { user: username });
+    } else {
+      return callback(new Error('Invalid username or password'));
+    }
   },
-  onMailFrom(address, session, cb) {
-    console.log('onMailFrom', address.address, session.id)
-    cb()
-  },
-  onRcptTo(address, session, cb) {
-    console.log('onRcptTo', address.address, session.id)
-    cb()
-  },
-
-  async onData(stream, session, callback) {
-    console.log('here in check function while we receive mail.')
-    let emailData = '';
-    stream.on('data', (chunk) => {
-      emailData += chunk.toString();
+  onData(stream, session, callback) {
+    console.log('mail check')
+    let emailContent = '';
+    stream.on('data', chunk => {
+      emailContent += chunk.toString();
     });
 
     stream.on('end', async () => {
+      console.log('mail check')
       try {
-        // Parse the email using mailparser
-        const parsed = await simpleParser(emailData);
-        const { from, to, subject, text, html, attachments } = parsed;
+        // Parse email content (basic)
+        const mail = parseMail(emailContent);
 
-        // Get recipient email
-        const recipient = to && to.value && to.value[0].address;
-        const user = await User.findOne({ email: recipient });
-
-        if (!user) {
-          console.error(`User not found for recipient email: ${recipient}`);
-          return callback(new Error(`Recipient ${recipient} not found`));
-        }
-
-        // Prepare email document
-        const email = new Email({
-          from: from.text,
-          to: to.value.map((item) => item.address),
-          subject,
-          text,
-          html,
-          folder: 'inbox',
-          user_id: user._id
-        });
-
-        // Handle attachments
-        if (attachments && attachments.length > 0) {
-          email.attachments = [];
-
-          for (const attachment of attachments) {
-            const filePath = path.join(__dirname, 'uploads', attachment.filename);
-            fs.writeFileSync(filePath, attachment.content); // Save the attachment
-            email.attachments.push({ filename: attachment.filename, path: filePath });
-          }
-        }
-
-        // Save email
+        // Save email to database
+        const email = new Email(mail);
         await email.save();
-        callback(null);
+
+        // Save email to local storage
+        const mailId = crypto.randomBytes(16).toString('hex');
+        const filePath = path.join(__dirname, 'mail_storage', `${mailId}.eml`);
+        fs.writeFileSync(filePath, emailContent);
+
+        callback(null); // Success
       } catch (error) {
-        console.error('Error processing email:', error.message);
-        callback(new Error('Error processing email data'));
+        console.error('Error processing email:', error);
+        callback(error); // Fail
       }
     });
   },
-
-  onError(err) {
-    console.error('SMTP server error:', err.message);
-  }
 });
 
-// Ensure uploads directory exists
-if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
-  fs.mkdirSync(path.join(__dirname, 'uploads'));
+server.listen(465, () => {
+  console.log('SMTP server is running on port 465');
+});
+
+// Helper function to parse email content
+function parseMail(rawMail) {
+  const [header, body] = rawMail.split('\r\n\r\n');
+  const headers = header.split('\r\n');
+  const mail = { from: '', to: [], cc: [], bcc: [], subject: '', body };
+
+  headers.forEach(line => {
+    if (line.startsWith('From:')) mail.from = line.replace('From:', '').trim();
+    if (line.startsWith('To:')) mail.to = line.replace('To:', '').split(',').map(addr => addr.trim());
+    if (line.startsWith('Cc:')) mail.cc = line.replace('Cc:', '').split(',').map(addr => addr.trim());
+    if (line.startsWith('Bcc:')) mail.bcc = line.replace('Bcc:', '').split(',').map(addr => addr.trim());
+    if (line.startsWith('Subject:')) mail.subject = line.replace('Subject:', '').trim();
+  });
+
+  mail.body = body.trim();
+  return mail;
 }
-
-// Start SMTP Server
-smtpServer.listen(smtpPort, () => {
-  console.log(`SMTP server running on port ${smtpPort}`);
-});
