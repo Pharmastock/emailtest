@@ -624,7 +624,18 @@ const smtpServer = new SMTPServer({
   secure: true,
   ...sslOptions,
   authOptional: true,
-
+  onConnect(session, cb) {
+    console.log('onconnect', session.id)
+    cb()
+  },
+  onMailFrom(address, session, cb) {
+    console.log('onMailFrom', address.address, session.id)
+    cb()
+  },
+  onRcptTo(address, session, cb) {
+    console.log('onRcptTo', address.address, session.id)
+    cb()
+  },
   async onData(stream, session, callback) {
     let emailData = '';
     stream.on('data', (chunk) => {
