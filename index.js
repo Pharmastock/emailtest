@@ -164,8 +164,8 @@ const smtpPort = process.env.SMTP_PORT || 25;
 const smtpServer = new SMTPServer({
   secure: true,
   ...sslOptions,
-  allowInsecureAuth: true,
-  authOptional: true,
+  // allowInsecureAuth: true,
+  // authOptional: true,
   onConnect(session, cb) {
     console.log('onconnect', session.id)
     cb()
