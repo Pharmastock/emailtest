@@ -436,6 +436,28 @@ const smtpReceiver = new SMTPServer({
         });
 
         // Handle attachments
+        // if (attachments && attachments.length > 0) {
+        //   email.attachments = [];
+
+        //   for (const attachment of attachments) {
+        //     if (attachment.size > 2147483648) {
+        //       console.error('Attachment size exceeds 2GB');
+        //       return callback(new Error('Attachment size exceeds 2GB'));
+        //     }
+
+        //     const filePath = path.join(__dirname, 'uploads', attachment.filename);
+        //     const writeStream = fs.createWriteStream(filePath);
+
+        //     attachment.content.pipe(writeStream);
+
+        //     await new Promise((resolve, reject) => {
+        //       writeStream.on('finish', resolve);
+        //       writeStream.on('error', reject);
+        //     });
+
+        //     email.attachments.push({ filename: attachment.filename, path: filePath });
+        //   }
+        // }
         if (attachments && attachments.length > 0) {
           email.attachments = [];
 
@@ -446,14 +468,9 @@ const smtpReceiver = new SMTPServer({
             }
 
             const filePath = path.join(__dirname, 'uploads', attachment.filename);
-            const writeStream = fs.createWriteStream(filePath);
 
-            attachment.content.pipe(writeStream);
-
-            await new Promise((resolve, reject) => {
-              writeStream.on('finish', resolve);
-              writeStream.on('error', reject);
-            });
+            // Write the content directly to the file
+            await fs.promises.writeFile(filePath, attachment.content);
 
             email.attachments.push({ filename: attachment.filename, path: filePath });
           }
