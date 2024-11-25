@@ -539,9 +539,9 @@ const smtpSender = new SMTPServer({
 
           const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
           console.log(isPasswordValid,'auth.password--------------------------')
-          if (!isPasswordValid) {
-              return callback(new Error('Invalid credentials: Incorrect password'));
-          }
+          // if (!isPasswordValid) {
+          //     return callback(new Error('Invalid credentials: Incorrect password'));
+          // }
 
           callback(null, { user: auth.username });
       } catch (error) {
