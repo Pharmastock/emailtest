@@ -532,6 +532,7 @@ const smtpSender = new SMTPServer({
           const user = await User.findOne({ email: auth.username });
           console.log(user,'----------------user')
           console.log(auth.password,'----------------auth.password')
+          console.log(await bcrypt.compare(auth.password, user.smtpPassword),'----------------await bcrypt.compare(auth.password, user.smtpPassword)')
           if (!user) {
               return callback(new Error('Invalid credentials: User not found'));
           }
