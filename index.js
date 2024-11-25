@@ -361,7 +361,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', process.env.DOMAIN || 'https://localhost:3000');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, multipart/form-data','application/octet-stream');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, multipart/form-data', 'application/octet-stream');
   next();
 });
 
@@ -405,7 +405,7 @@ const smtpReceiver = new SMTPServer({
       try {
         console.log('heare in receive mail')
         const parsed = await simpleParser(emailData);
-        const { from, to, subject, text, html, attachments } = parsed;
+        const { from, to, cc, bcc, subject, text, html, attachments } = parsed;
 
         // Extract recipient's email
         const recipientEmail = to && to.value && to.value[0]?.address;
