@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Mail = require('../Controller/composeMail');
 const authenticateToken = require('../MiddleWare/AuthAuthorization'); // Adjust the path if needed
-const { getEmailsByFolder, toggleStarred, toggleConversation, getAllStarredEmails, getAllConversations } = require('../Controller/getallmail');
+const { getEmailsByFolder, toggleStarred, toggleConversation, getAllStarredEmails, getAllConversations, previweFile, downloadfile } = require('../Controller/getallmail');
 
 
 // Toggle Starred Status
@@ -20,6 +20,11 @@ router.get('/conversations', authenticateToken, getAllConversations);
 //send mail
 router.get('/mails/:folder', authenticateToken, getEmailsByFolder );
 
+//preview files
+router.get('/preview/:filename',authenticateToken ,previweFile);
+
+//download files
+router.get('/download/:filename',authenticateToken ,downloadfile);
 
 //send mail
 router.post('/sendmail', authenticateToken, Mail.sendEmail);

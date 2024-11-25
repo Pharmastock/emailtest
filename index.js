@@ -406,7 +406,6 @@ const smtpReceiver = new SMTPServer({
         console.log('heare in receive mail')
         const parsed = await simpleParser(emailData);
         const { from, to, cc, bcc, subject, text, html, attachments } = parsed;
-
         // Extract recipient's email
         const recipientEmail = to && to.value && to.value[0]?.address;
 
@@ -492,37 +491,70 @@ smtpReceiver.listen(25, () => {
 
 
 // Create SMTP server
+// const smtpSender = new SMTPServer({
+//   secure: true, // TLS enabled for port 465
+//   ...sslOptions, // Include SSL options
+//   onAuth: async (auth, session, callback) => {
+//     try {
+//       // Retrieve user from the database based on email
+//       const user = await User.findOne({ email: auth.username });
+//       if (!user) {
+//         return callback(new Error('Invalid credentials: User not found'));
+//       }
+
+//       // Compare provided password with stored SMTP password
+//       const isPasswordValid = await bcrypt.compare(auth.password, user.smtpPassword);
+//       if (!isPasswordValid) {
+//         return callback(new Error('Invalid credentials: Incorrect password'));
+//       }
+
+//       // If authentication is successful, pass the user object to the callback
+//       callback(null, { user: auth.username });
+//     } catch (error) {
+//       // Handle any errors during the authentication process
+//       console.error('Authentication failed:', error);
+//       callback(new Error('Authentication failed'));
+//     }
+//   },
+// });
+
+// // Start the SMTP server on port 465
+// smtpSender.listen(465, () => {
+//   console.log('SMTP server listening on port 465 for sending emails');
+// });
 const smtpSender = new SMTPServer({
-  secure: true, // TLS enabled for port 465
-  ...sslOptions, // Include SSL options
+  secure: true, // TLS enabled
+  key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+  ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
   onAuth: async (auth, session, callback) => {
-    try {
-      // Retrieve user from the database based on email
-      const user = await User.findOne({ email: auth.username });
-      if (!user) {
-        return callback(new Error('Invalid credentials: User not found'));
-      }
+      try {
+          const user = await User.findOne({ email: auth.username });
+          console.log(user,'----------------user')
+          if (!user) {
+              return callback(new Error('Invalid credentials: User not found'));
+          }
 
-      // Compare provided password with stored SMTP password
-      const isPasswordValid = await bcrypt.compare(auth.password, user.smtpPassword);
-      if (!isPasswordValid) {
-        return callback(new Error('Invalid credentials: Incorrect password'));
-      }
+          const isPasswordValid = await bcrypt.compare(auth.password, user.smtpPassword);
+          if (!isPasswordValid) {
+              return callback(new Error('Invalid credentials: Incorrect password'));
+          }
 
-      // If authentication is successful, pass the user object to the callback
-      callback(null, { user: auth.username });
-    } catch (error) {
-      // Handle any errors during the authentication process
-      console.error('Authentication failed:', error);
-      callback(new Error('Authentication failed'));
-    }
+          callback(null, { user: auth.username });
+      } catch (error) {
+          console.error('Authentication failed:', error);
+          callback(new Error('Authentication failed'));
+      }
+  },
+  tls: {
+      rejectUnauthorized: false, // Accept self-signed certificates
   },
 });
 
-// Start the SMTP server on port 465
 smtpSender.listen(465, () => {
   console.log('SMTP server listening on port 465 for sending emails');
 });
+
 
 // HTTPS Server
 const httpsPort = process.env.PORT || 443;

@@ -115,8 +115,8 @@ async function prepareAttachments(attachments) {
 
 exports.sendEmail = async (req, res) => {
     const { user_id, to, subject, text, html, cc, bcc, attachments } = req.body;
+    console.log(user_id, to, subject, text, html, cc, bcc, attachments)
 
-   
     if (!user_id || !to || !subject || (!text && !html)) {
         return res.status(400).json({ error: 'user_id, to, subject, and either text or html content are required.' });
     }
@@ -131,6 +131,9 @@ exports.sendEmail = async (req, res) => {
         if (!smtpPassword) {
             return res.status(403).json({ error: 'Invalid SMTP credentials' });
         }
+        console.log(parseInt(process.env.SMTP_PORT, 10))
+        console.log(parseInt(process.env.SMTP_PORT, 10) === 465)
+        console.log(smtpPassword)
 
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
@@ -140,6 +143,9 @@ exports.sendEmail = async (req, res) => {
                 user: user.email,
                 pass: smtpPassword,
             },
+            tls: {
+                rejectUnauthorized: false,
+            }
         });
 
         // Prepare attachments
@@ -149,11 +155,11 @@ exports.sendEmail = async (req, res) => {
         const mailOptions = {
             from: user.email,
             to: parseEmails(to),
+            cc: parseEmails(cc || ''),
+            bcc: parseEmails(bcc || ''),
             subject,
             text,                   // Plain text content
             html,                   // HTML content
-            cc: parseEmails(cc || ''),
-            bcc: parseEmails(bcc || ''),
             attachments: mailAttachments
         };
 
@@ -184,10 +190,10 @@ exports.sendEmail = async (req, res) => {
 
         const savedEmail = await Email.create(emailData);
 
-        res.status(200).json({ 
-            message: 'Email sent and saved successfully', 
-            info: info.response, 
-            email: savedEmail 
+        res.status(200).json({
+            message: 'Email sent and saved successfully',
+            info: info.response,
+            email: savedEmail
         });
 
     } catch (error) {
@@ -210,7 +216,7 @@ exports.sendEmail = async (req, res) => {
 
 // ('front emnd please do not astimte it ')
 // npm install formik yup axios @mui/material @mui/icons-material
-// //frontend 
+// //frontend
 // import React, { useState } from 'react';
 // import { useFormik } from 'formik';
 // import * as Yup from 'yup';
