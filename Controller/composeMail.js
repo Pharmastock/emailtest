@@ -134,7 +134,7 @@ exports.sendEmail = async (req, res) => {
 
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT, 10) || 587,
+            port: parseInt(process.env.SMTP_PORT, 10) || 465,
             secure: parseInt(process.env.SMTP_PORT, 10) === 465,
             auth: {
                 user: user.email,
@@ -208,7 +208,7 @@ exports.sendEmail = async (req, res) => {
 // }
 
 
-('front emnd please do not astimte it ')
+// ('front emnd please do not astimte it ')
 // npm install formik yup axios @mui/material @mui/icons-material
 // //frontend 
 // import React, { useState } from 'react';

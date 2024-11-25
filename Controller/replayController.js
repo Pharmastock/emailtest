@@ -153,7 +153,7 @@ exports.replyEmail = async (req, res) => {
         // Step 5: Set up the SMTP transporter
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT, 10) || 587,
+            port: parseInt(process.env.SMTP_PORT, 10) || 465,
             secure: parseInt(process.env.SMTP_PORT, 10) === 465,
             auth: {
                 user: user.email,
