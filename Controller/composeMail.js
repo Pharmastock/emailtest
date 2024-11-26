@@ -335,7 +335,7 @@ L3EAUaQJV/RwCr2ogxYQoxI=
                 <p>This is an automatically generated message. Please do not reply.</p>
                 `,
             };
-
+            console.log(notificationMailOptions)
             await transporter.sendMail(notificationMailOptions);
             return res.status(500).json({
                 error: 'Failed to deliver email. Notification has been sent to the sender.',

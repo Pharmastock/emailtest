@@ -494,34 +494,39 @@ smtpReceiver.listen(25, () => {
 
 // Create SMTP server
 const smtpSender = new SMTPServer({
+  banner: 'mail.avinixsolutions.com ESMTP Server',
   secure: true, // TLS enabled
   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
   ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
   onAuth: async (auth, session, callback) => {
-      try {
-          const user = await User.findOne({ email: auth.username });
-          console.log(user,'----------------user')
-          console.log(auth.password,'----------------auth.password')
-          console.log(await bcrypt.compare(auth.password, user.hashedSmtpPassword),'----------------await bcrypt.compare(auth.password, user.smtpPassword)')
-          if (!user) {
-              return callback(new Error('Invalid credentials: User not found'));
-          }
-
-          const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
-          console.log(isPasswordValid,'auth.password--------------------------')
-          // if (!isPasswordValid) {
-          //     return callback(new Error('Invalid credentials: Incorrect password'));
-          // }
-
-          callback(null, { user: auth.username });
-      } catch (error) {
-          console.error('Authentication failed:', error);
-          callback(new Error('Authentication failed'));
+    try {
+      const user = await User.findOne({ email: auth.username });
+      console.log(user, '----------------user')
+      console.log(auth.password, '----------------auth.password')
+      console.log(await bcrypt.compare(auth.password, user.hashedSmtpPassword), '----------------await bcrypt.compare(auth.password, user.smtpPassword)')
+      if (!user) {
+        return callback(new Error('Invalid credentials: User not found'));
       }
+
+      const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
+      console.log(isPasswordValid, 'auth.password--------------------------')
+      // if (!isPasswordValid) {
+      //     return callback(new Error('Invalid credentials: Incorrect password'));
+      // }
+      // Ensure emails are sent from the authenticated user's domain.
+      if (!auth.username.endsWith('@yourdomain.com')) {
+        return callback(new Error('Relay access denied'));
+      }
+      
+      callback(null, { user: auth.username });
+    } catch (error) {
+      console.error('Authentication failed:', error);
+      callback(new Error('Authentication failed'));
+    }
   },
   tls: {
-      rejectUnauthorized: false, // Accept self-signed certificates
+    rejectUnauthorized: false, // Accept self-signed certificates
   },
 });
 
@@ -564,7 +569,7 @@ const smtpSender = new SMTPServer({
 //   onData: async (stream, session, callback) => {
 //       // Extract the sender (user email) from the session for SMTP authentication
 //       const senderEmail = session.envelope.mailFrom.address;
-      
+
 //       try {
 //           // Retrieve user SMTP credentials based on the sender email
 //           const user = await User.findOne({ email: senderEmail });
