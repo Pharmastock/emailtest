@@ -493,126 +493,126 @@ smtpReceiver.listen(25, () => {
 
 
 // Create SMTP server
-// const smtpSender = new SMTPServer({
-//   secure: true, // TLS enabled
-//   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
-//   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
-//   ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
-//   onAuth: async (auth, session, callback) => {
-//       try {
-//           const user = await User.findOne({ email: auth.username });
-//           console.log(user,'----------------user')
-//           console.log(auth.password,'----------------auth.password')
-//           console.log(await bcrypt.compare(auth.password, user.hashedSmtpPassword),'----------------await bcrypt.compare(auth.password, user.smtpPassword)')
-//           if (!user) {
-//               return callback(new Error('Invalid credentials: User not found'));
-//           }
-
-//           const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
-//           console.log(isPasswordValid,'auth.password--------------------------')
-//           // if (!isPasswordValid) {
-//           //     return callback(new Error('Invalid credentials: Incorrect password'));
-//           // }
-
-//           callback(null, { user: auth.username });
-//       } catch (error) {
-//           console.error('Authentication failed:', error);
-//           callback(new Error('Authentication failed'));
-//       }
-//   },
-//   tls: {
-//       rejectUnauthorized: false, // Accept self-signed certificates
-//   },
-// });
-
-// SMTP Server Configuration
 const smtpSender = new SMTPServer({
   secure: true, // TLS enabled
   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
   ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
-
   onAuth: async (auth, session, callback) => {
       try {
-          // Retrieve user from the database using the username (email)
           const user = await User.findOne({ email: auth.username });
-
-          // Check if user exists
+          console.log(user,'----------------user')
+          console.log(auth.password,'----------------auth.password')
+          console.log(await bcrypt.compare(auth.password, user.hashedSmtpPassword),'----------------await bcrypt.compare(auth.password, user.smtpPassword)')
           if (!user) {
               return callback(new Error('Invalid credentials: User not found'));
           }
 
-          // Check if the provided password matches the stored hashed password
           const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
-          if (isPasswordValid) {
-              return callback(new Error('Invalid credentials: Incorrect password'));
-          }
+          console.log(isPasswordValid,'auth.password--------------------------')
+          // if (!isPasswordValid) {
+          //     return callback(new Error('Invalid credentials: Incorrect password'));
+          // }
 
-          // Authentication successful
           callback(null, { user: auth.username });
       } catch (error) {
           console.error('Authentication failed:', error);
           callback(new Error('Authentication failed'));
       }
   },
-
   tls: {
-      rejectUnauthorized: false, // Allow self-signed certificates
+      rejectUnauthorized: false, // Accept self-signed certificates
   },
+});
 
-  // Handle email data forwarding
-  onData: async (stream, session, callback) => {
-      // Extract the sender (user email) from the session for SMTP authentication
-      const senderEmail = session.envelope.mailFrom.address;
+// SMTP Server Configuration
+// const smtpSender = new SMTPServer({
+//   secure: true, // TLS enabled
+//   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+//   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+//   ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
+
+//   onAuth: async (auth, session, callback) => {
+//       try {
+//           // Retrieve user from the database using the username (email)
+//           const user = await User.findOne({ email: auth.username });
+
+//           // Check if user exists
+//           if (!user) {
+//               return callback(new Error('Invalid credentials: User not found'));
+//           }
+
+//           // Check if the provided password matches the stored hashed password
+//           const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
+//           if (isPasswordValid) {
+//               return callback(new Error('Invalid credentials: Incorrect password'));
+//           }
+
+//           // Authentication successful
+//           callback(null, { user: auth.username });
+//       } catch (error) {
+//           console.error('Authentication failed:', error);
+//           callback(new Error('Authentication failed'));
+//       }
+//   },
+
+//   tls: {
+//       rejectUnauthorized: false, // Allow self-signed certificates
+//   },
+
+//   // Handle email data forwarding
+//   onData: async (stream, session, callback) => {
+//       // Extract the sender (user email) from the session for SMTP authentication
+//       const senderEmail = session.envelope.mailFrom.address;
       
-      try {
-          // Retrieve user SMTP credentials based on the sender email
-          const user = await User.findOne({ email: senderEmail });
-          if (!user) {
-              return callback(new Error('Sender user not found'));
-          }
+//       try {
+//           // Retrieve user SMTP credentials based on the sender email
+//           const user = await User.findOne({ email: senderEmail });
+//           if (!user) {
+//               return callback(new Error('Sender user not found'));
+//           }
 
-          // Fetch the user-specific SMTP credentials
-          const forwardMailOptions = {
-              host: process.env.SMTP_HOST, // Use user-specific SMTP host
-              port: parseInt(process.env.SMTP_PORT, 10), // Use user-specific SMTP port
-              secure: true,
-              auth: {
-                  user: user.email, // User-specific SMTP user
-                  pass: 'Milin@9512', // User-specific SMTP password
-              },
-          };
+//           // Fetch the user-specific SMTP credentials
+//           const forwardMailOptions = {
+//               host: process.env.SMTP_HOST, // Use user-specific SMTP host
+//               port: parseInt(process.env.SMTP_PORT, 10), // Use user-specific SMTP port
+//               secure: true,
+//               auth: {
+//                   user: user.email, // User-specific SMTP user
+//                   pass: 'Milin@9512', // User-specific SMTP password
+//               },
+//           };
 
-          // Create a transporter with user-specific credentials
-          const forwardTransporter = nodemailer.createTransport(forwardMailOptions);
+//           // Create a transporter with user-specific credentials
+//           const forwardTransporter = nodemailer.createTransport(forwardMailOptions);
 
-          let emailData = '';
-          stream.on('data', (chunk) => {
-              emailData += chunk;
-          });
+//           let emailData = '';
+//           stream.on('data', (chunk) => {
+//               emailData += chunk;
+//           });
 
-          stream.on('end', async () => {
-              try {
-                  // Forward the email using the user's SMTP credentials
-                  await forwardTransporter.sendMail({ raw: emailData });
-                  callback(null); // Successfully forwarded
-              } catch (err) {
-                  console.error('Error forwarding email:', err);
-                  callback(err);
-              }
-          });
+//           stream.on('end', async () => {
+//               try {
+//                   // Forward the email using the user's SMTP credentials
+//                   await forwardTransporter.sendMail({ raw: emailData });
+//                   callback(null); // Successfully forwarded
+//               } catch (err) {
+//                   console.error('Error forwarding email:', err);
+//                   callback(err);
+//               }
+//           });
 
-      } catch (err) {
-          console.error('Error processing email data:', err);
-          callback(err);
-      }
-  },
-});
+//       } catch (err) {
+//           console.error('Error processing email data:', err);
+//           callback(err);
+//       }
+//   },
+// });
 
 
-smtpSender.listen(465, () => {
-  console.log('SMTP server listening on port 465 for sending emails');
-});
+// smtpSender.listen(465, () => {
+//   console.log('SMTP server listening on port 465 for sending emails');
+// });
 
 
 // HTTPS Server
