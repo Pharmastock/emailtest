@@ -515,17 +515,33 @@ const smtpSender = new SMTPServer({
       //     return callback(new Error('Invalid credentials: Incorrect password'));
       // }
       // Ensure emails are sent from the authenticated user's domain.
-      console.log('auth.usernameauth.username------------------------',auth.username)
+      console.log('auth.usernameauth.username------------------------', auth.username)
       if (!auth.username.endsWith('@avinixsolutions.com')) {
         return callback(new Error('Relay access denied'));
       }
-      
+
       callback(null, { user: auth.username });
     } catch (error) {
       console.error('Authentication failed:', error);
       callback(new Error('Authentication failed'));
     }
   },
+  onData(stream, session, callback) {
+    console.log('here in onData')
+    stream.pipe(process.stdout); // Print the email to console for demo purposes
+    stream.on('end', callback);
+  },
+  onMailFrom(address, session, callback) {
+    console.log(`Incoming email from: ${address.address}`);
+    callback();
+  },
+  onRcptTo(address, session, callback) {
+    console.log(`Outgoing email to: ${address.address}`);
+    callback();
+  },
+  // tls: {
+  //   rejectUnauthorized: false,
+  // },
   tls: {
     rejectUnauthorized: false, // Accept self-signed certificates
   },
