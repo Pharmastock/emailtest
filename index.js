@@ -394,7 +394,6 @@ const sslOptions = {
 
 // Handle Received Emails (SMTP Server for Port 25)
 const smtpReceiver = new SMTPServer({
-  lmtp: true,
   secure: false, // Not using TLS for port 25
   authOptional: true,
   async onData(stream, session, callback) {
