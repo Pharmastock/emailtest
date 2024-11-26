@@ -610,9 +610,9 @@ const smtpSender = new SMTPServer({
 // });
 
 
-// smtpSender.listen(465, () => {
-//   console.log('SMTP server listening on port 465 for sending emails');
-// });
+smtpSender.listen(465, () => {
+  console.log('SMTP server listening on port 465 for sending emails');
+});
 
 
 // HTTPS Server
