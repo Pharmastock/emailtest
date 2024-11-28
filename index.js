@@ -581,19 +581,19 @@ const server = new SMTPServer({
   },
   onData(stream, session, callback) {
     let message = '';
-    stream.on('data', chunk => {
-      message += chunk;
+    stream.on('data', (chunk) => {
+      message += chunk.toString();
     });
     stream.on('end', async () => {
       try {
-        // Transporter configuration for relaying email
+        // Nodemailer transporter configuration
         const transporter = nodemailer.createTransport({
           host: process.env.SMTP_HOST || 'smtp.gmail.com', // Replace with your SMTP host
           port: parseInt(process.env.SMTP_PORT, 10) || 465,
           secure: true, // Use SSL
           auth: {
-            user:  'check@avinixsolutions.com', // Replace with valid credentials
-            pass:  'Milin@9512',    // Replace with valid credentials
+            user: 'check@avinixsolutions.com', // Replace with valid credentials
+            pass: 'Milin@9512', // Replace with valid credentials
           },
           tls: { rejectUnauthorized: false },
           dkim: process.env.DKIM_PRIVATE_KEY
@@ -603,19 +603,22 @@ const server = new SMTPServer({
                 privateKey: process.env.DKIM_PRIVATE_KEY,
               }
             : undefined,
+          connectionTimeout: 10000, // 10 seconds
+          greetingTimeout: 5000, // 5 seconds
+          socketTimeout: 20000, // 20 seconds
         });
 
         console.log('Relaying email...');
         await transporter.sendMail({
-          from: 'check@avinixsolutions.com', // Replace with a valid "from" address
-          to: 'milinchhipavadiya@gmail.com', // Replace with recipient's email
+          from: 'check@avinixsolutions.com', // Sender address
+          to: 'milinchhipavadiya@gmail.com', // Recipient
           subject: 'Relayed Email',
           text: message || 'Test email content', // Email content
         });
         console.log('Email relayed successfully!');
         callback(null); // Accept the message
       } catch (error) {
-        console.error('Failed to relay email:', error);
+        console.error('Failed to relay email:', error.message);
         callback(new Error('Failed to send email.'));
       }
     });
@@ -629,7 +632,7 @@ const server = new SMTPServer({
   },
 });
 
-// Start the server
+// Start the SMTP server
 server.listen(465, () => {
   console.log('SMTP server is running on port 465');
 });
