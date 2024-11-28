@@ -71,7 +71,7 @@ exports.sendEmail = async (req, res) => {
             },
             tls: { rejectUnauthorized: false },
             dkim: {
-                domainName: 'yourdomain.com',
+                domainName: 'avinixsolutions.com',
                 keySelector: 'default',
                 privateKey: process.env.DKIM_PRIVATE_KEY,
             },

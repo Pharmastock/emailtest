@@ -390,7 +390,7 @@ const sslOptions = {
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
   ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt'))
 };
- 
+
 
 // Handle Received Emails (SMTP Server for Port 25)
 const smtpReceiver = new SMTPServer({
@@ -564,54 +564,70 @@ smtpReceiver.listen(25, () => {
 
 // SSL/TLS credentials
 const credentials = {
-    key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
-    cert:  fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+  key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
 };
 
 // Create the SMTP server
 const server = new SMTPServer({
-    secure: true, // Ensure secure connection (port 465)
-    key: credentials.key,
-    cert: credentials.cert,
-    authOptional: false, // Enforce authentication
-    onAuth(auth, session, callback) {
-        // Basic authentication logic
-        // const { username, password } = auth;
-        // if (username === 'user@example.com' && password === 'password123') {
-        const mail = 'check@avinixsolutions.com'
-            callback(null, { user: mail });
-        // } else {
-        //     callback(new Error('Authentication failed'));
-        // }
-    },
-    onData(stream, session, callback) {
-      let message = 'chekc mail';
-      stream.on('data', chunk => {
-          message += chunk;
-      });
-      stream.on('end', async () => {
-          try {
-              console.log('Relaying email...');
-              await transporter.sendMail({
-                  from: 'check@avinixsolutions.com', // Replace with a valid "from" address
-                  to: 'milinchhipavadiya@gmail.com', // Replace with recipient's email
-                  subject: 'Relayed Email',
-                  text: message, // Email content
-              });
-              console.log('Email relayed successfully!');
-              callback(null); // Accept the message
-          } catch (error) {
-              console.error('Failed to relay email:', error);
-              callback(new Error('Failed to send email.'));
-          }
-      });
+  secure: true, // Ensure secure connection (port 465)
+  key: credentials.key,
+  cert: credentials.cert,
+  authOptional: false, // Enforce authentication
+  onAuth(auth, session, callback) {
+    // Basic authentication logic
+    // const { username, password } = auth;
+    // if (username === 'user@example.com' && password === 'password123') {
+    const mail = 'check@avinixsolutions.com'
+    callback(null, { user: mail });
+    // } else {
+    //     callback(new Error('Authentication failed'));
+    // }
+  },
+  onData(stream, session, callback) {
+    let message = 'chekc mail';
+    stream.on('data', chunk => {
+      message += chunk;
+    });
+    stream.on('end', async () => {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT, 10) || 465,
+          secure: parseInt(process.env.SMTP_PORT, 10) === 465,
+          auth: {
+            user: user.email,
+            pass: smtpPassword,
+          },
+          tls: { rejectUnauthorized: false },
+          dkim: {
+            domainName: 'avinixsolutions.com',
+            keySelector: 'default',
+            privateKey: process.env.DKIM_PRIVATE_KEY,
+          },
+        });
+
+        console.log('Relaying email...');
+        await transporter.sendMail({
+          from: 'check@avinixsolutions.com', // Replace with a valid "from" address
+          to: 'milinchhipavadiya@gmail.com', // Replace with recipient's email
+          subject: 'Relayed Email',
+          text: message, // Email content
+        });
+        console.log('Email relayed successfully!');
+        callback(null); // Accept the message
+      } catch (error) {
+        console.error('Failed to relay email:', error);
+        callback(new Error('Failed to send email.'));
+      }
+    });
   },
   onConnect(session, callback) {
-      console.log('Client connected:', session.remoteAddress);
-      callback();
+    console.log('Client connected:', session.remoteAddress);
+    callback();
   },
   onClose(session) {
-      console.log('Client disconnected:', session.remoteAddress);
+    console.log('Client disconnected:', session.remoteAddress);
   },
 });
 
@@ -619,7 +635,7 @@ const server = new SMTPServer({
 
 // Start listening on port 465
 server.listen(465, () => {
-    console.log('SMTP server is running on port 465');
+  console.log('SMTP server is running on port 465');
 });
 
 
