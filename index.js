@@ -492,71 +492,120 @@ smtpReceiver.listen(25, () => {
 });
 
 
-// Create SMTP server
-const smtpSender = new SMTPServer({
-  banner: 'mail.avinixsolutions.com ESMTP Server',
-  secure: true, // TLS enabled
-  key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
-  ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
-  onAuth: async (auth, session, callback) => {
-    try {
-      const user = await User.findOne({ email: auth.username });
-      console.log(user, '----------------user')
-      console.log(auth.password, '----------------auth.password')
-      console.log(await bcrypt.compare(auth.password, user.hashedSmtpPassword), '----------------await bcrypt.compare(auth.password, user.smtpPassword)')
-      if (!user) {
-        return callback(new Error('Invalid credentials: User not found'));
-      }
+// // Create SMTP server
+// const smtpSender = new SMTPServer({
+//   banner: 'mail.avinixsolutions.com ESMTP Server',
+//   secure: true, // TLS enabled
+//   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+//   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+//   ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
+//   onAuth: async (auth, session, callback) => {
+//     try {
+//       const user = await User.findOne({ email: auth.username });
+//       console.log(user, '----------------user')
+//       console.log(auth.password, '----------------auth.password')
+//       console.log(await bcrypt.compare(auth.password, user.hashedSmtpPassword), '----------------await bcrypt.compare(auth.password, user.smtpPassword)')
+//       if (!user) {
+//         return callback(new Error('Invalid credentials: User not found'));
+//       }
 
-      const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
-      console.log(isPasswordValid, 'auth.password--------------------------')
-      // if (!isPasswordValid) {
-      //     return callback(new Error('Invalid credentials: Incorrect password'));
-      // }
-      // Ensure emails are sent from the authenticated user's domain.
-      console.log('auth.usernameauth.username------------------------', auth.username)
-      if (!auth.username.endsWith('@avinixsolutions.com')) {
-        return callback(new Error('Relay access denied'));
-      }
+//       const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
+//       console.log(isPasswordValid, 'auth.password--------------------------')
+//       // if (!isPasswordValid) {
+//       //     return callback(new Error('Invalid credentials: Incorrect password'));
+//       // }
+//       // Ensure emails are sent from the authenticated user's domain.
+//       console.log('auth.usernameauth.username------------------------', auth.username)
+//       if (!auth.username.endsWith('@avinixsolutions.com')) {
+//         return callback(new Error('Relay access denied'));
+//       }
 
-      callback(null, { user: auth.username });
-    } catch (error) {
-      console.error('Authentication failed:', error);
-      callback(new Error('Authentication failed'));
-    }
-  },
-  onData(stream, session, callback) {
-    console.log('here in onData')
-    stream.pipe(process.stdout); // Print the email to console for demo purposes
-    stream.on('end', callback);
-  },
-  onMailFrom(address, session, callback) {
-    console.log(`Incoming email from: ${address.address}`);
-    callback();
-  },
-  onRcptTo(address, session, callback) {
-    console.log(`Outgoing email to: ${address.address}`);
-    callback();
-  },
-  // tls: {
-  //   rejectUnauthorized: false,
-  // },
-  onData(stream, session, callback) {
-    console.log('Sending email...');
-    stream.on('end', callback);
-  },
+//       callback(null, { user: auth.username });
+//     } catch (error) {
+//       console.error('Authentication failed:', error);
+//       callback(new Error('Authentication failed'));
+//     }
+//   },
+//   onData(stream, session, callback) {
+//     console.log('here in onData')
+//     stream.pipe(process.stdout); // Print the email to console for demo purposes
+//     stream.on('end', callback);
+//   },
+//   onMailFrom(address, session, callback) {
+//     console.log(`Incoming email from: ${address.address}`);
+//     callback();
+//   },
+//   onRcptTo(address, session, callback) {
+//     console.log(`Outgoing email to: ${address.address}`);
+//     callback();
+//   },
+//   // tls: {
+//   //   rejectUnauthorized: false,
+//   // },
+//   onData(stream, session, callback) {
+//     console.log('Sending email...');
+//     stream.on('end', callback);
+//   },
 
-  disabledCommands: ['STARTTLS', 'AUTH PLAIN', 'AUTH LOGIN'], // Disable unnecessary commands
+//   disabledCommands: ['STARTTLS', 'AUTH PLAIN', 'AUTH LOGIN'], // Disable unnecessary commands
 
-  tls: {
-    rejectUnauthorized: false, // Allow self-signed certificates
-  },
+//   tls: {
+//     rejectUnauthorized: false, // Allow self-signed certificates
+//   },
+// });
+
+
+// smtpSender.listen(465, () => {
+//   console.log('SMTP server listening on port 465 for sending emails');
+// });
+
+// const { SMTPServer } = require('smtp-server');
+// const fs = require('fs');aa
+
+// SSL/TLS credentials
+const credentials = {
+    key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+    cert:  fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+};
+
+// Create the SMTP server
+const server = new SMTPServer({
+    secure: true, // Ensure secure connection (port 465)
+    key: credentials.key,
+    cert: credentials.cert,
+    authOptional: false, // Enforce authentication
+    onAuth(auth, session, callback) {
+        // Basic authentication logic
+        const { username, password } = auth;
+        if (username === 'user@example.com' && password === 'password123') {
+            callback(null, { user: username });
+        } else {
+            callback(new Error('Authentication failed'));
+        }
+    },
+    onData(stream, session, callback) {
+        let message = '';
+        stream.on('data', chunk => {
+            message += chunk;
+        });
+        stream.on('end', () => {
+            console.log('Received message:');
+            console.log(message);
+            callback(null); // Accept the message
+        });
+    },
+    onConnect(session, callback) {
+        console.log('Client connected:', session.remoteAddress);
+        callback();
+    },
+    onClose(session) {
+        console.log('Client disconnected:', session.remoteAddress);
+    },
 });
 
-
-smtpSender.listen(465, () => {
-  console.log('SMTP server listening on port 465 for sending emails');
+// Start listening on port 465
+server.listen(465, () => {
+    console.log('SMTP server is running on port 465');
 });
 
 
