@@ -575,36 +575,34 @@ const server = new SMTPServer({
   cert: credentials.cert,
   authOptional: false, // Enforce authentication
   onAuth(auth, session, callback) {
-    // Basic authentication logic
-    // const { username, password } = auth;
-    // if (username === 'user@example.com' && password === 'password123') {
-    const mail = 'check@avinixsolutions.com'
+    // Replace with proper authentication logic if needed
+    const mail = 'check@avinixsolutions.com';
     callback(null, { user: mail });
-    // } else {
-    //     callback(new Error('Authentication failed'));
-    // }
   },
   onData(stream, session, callback) {
-    let message = 'chekc mail';
+    let message = '';
     stream.on('data', chunk => {
       message += chunk;
     });
     stream.on('end', async () => {
       try {
+        // Transporter configuration for relaying email
         const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
+          host: process.env.SMTP_HOST || 'smtp.gmail.com', // Replace with your SMTP host
           port: parseInt(process.env.SMTP_PORT, 10) || 465,
-          secure: parseInt(process.env.SMTP_PORT, 10) === 465,
+          secure: true, // Use SSL
           auth: {
-            user: user.email,
-            pass: smtpPassword,
+            user: process.env.SMTP_USER || 'your-email@example.com', // Replace with valid credentials
+            pass: process.env.SMTP_PASS || 'your-email-password',    // Replace with valid credentials
           },
           tls: { rejectUnauthorized: false },
-          dkim: {
-            domainName: 'avinixsolutions.com',
-            keySelector: 'default',
-            privateKey: process.env.DKIM_PRIVATE_KEY,
-          },
+          dkim: process.env.DKIM_PRIVATE_KEY
+            ? {
+                domainName: 'avinixsolutions.com',
+                keySelector: 'default',
+                privateKey: process.env.DKIM_PRIVATE_KEY,
+              }
+            : undefined,
         });
 
         console.log('Relaying email...');
@@ -612,7 +610,7 @@ const server = new SMTPServer({
           from: 'check@avinixsolutions.com', // Replace with a valid "from" address
           to: 'milinchhipavadiya@gmail.com', // Replace with recipient's email
           subject: 'Relayed Email',
-          text: message, // Email content
+          text: message || 'Test email content', // Email content
         });
         console.log('Email relayed successfully!');
         callback(null); // Accept the message
@@ -631,12 +629,11 @@ const server = new SMTPServer({
   },
 });
 
-
-
-// Start listening on port 465
+// Start the server
 server.listen(465, () => {
   console.log('SMTP server is running on port 465');
 });
+
 
 
 // HTTPS Server
