@@ -577,11 +577,11 @@ const server = new SMTPServer({
     onAuth(auth, session, callback) {
         // Basic authentication logic
         const { username, password } = auth;
-        if (username === 'user@example.com' && password === 'password123') {
-            callback(null, { user: username });
-        } else {
-            callback(new Error('Authentication failed'));
-        }
+        // if (username === 'user@example.com' && password === 'password123') {
+        //     callback(null, { user: username });
+        // } else {
+        //     callback(new Error('Authentication failed'));
+        // }
     },
     onData(stream, session, callback) {
         let message = '';
