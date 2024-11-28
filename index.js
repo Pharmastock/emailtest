@@ -576,9 +576,10 @@ const server = new SMTPServer({
     authOptional: false, // Enforce authentication
     onAuth(auth, session, callback) {
         // Basic authentication logic
-        const { username, password } = auth;
+        // const { username, password } = auth;
         // if (username === 'user@example.com' && password === 'password123') {
-        //     callback(null, { user: username });
+        const mail = 'check@avinixsolutions.com'
+            callback(null, { user: mail });
         // } else {
         //     callback(new Error('Authentication failed'));
         // }
