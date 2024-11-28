@@ -84,7 +84,8 @@ exports.sendEmail = async (req, res) => {
 
         // Email options
         const mailOptions = {
-            from: `"${user.firstname} ${user.secoundname}" <${user.email}>`,
+            // from: `"${user.firstname} ${user.secoundname}" <${user.email}>`,
+            from: `${user.email}`,
             to: parseEmails(to),
             cc: parseEmails(cc),
             bcc: parseEmails(bcc),

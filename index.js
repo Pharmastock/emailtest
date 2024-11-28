@@ -585,24 +585,37 @@ const server = new SMTPServer({
         // }
     },
     onData(stream, session, callback) {
-        let message = '';
-        stream.on('data', chunk => {
-            message += chunk;
-        });
-        stream.on('end', () => {
-            console.log('Received message:');
-            console.log(message);
-            callback(null); // Accept the message
-        });
-    },
-    onConnect(session, callback) {
-        console.log('Client connected:', session.remoteAddress);
-        callback();
-    },
-    onClose(session) {
-        console.log('Client disconnected:', session.remoteAddress);
-    },
+      let message = 'chekc mail';
+      stream.on('data', chunk => {
+          message += chunk;
+      });
+      stream.on('end', async () => {
+          try {
+              console.log('Relaying email...');
+              await transporter.sendMail({
+                  from: 'check@avinixsolutions.com', // Replace with a valid "from" address
+                  to: 'milinchhipavadiya@gmail.com', // Replace with recipient's email
+                  subject: 'Relayed Email',
+                  text: message, // Email content
+              });
+              console.log('Email relayed successfully!');
+              callback(null); // Accept the message
+          } catch (error) {
+              console.error('Failed to relay email:', error);
+              callback(new Error('Failed to send email.'));
+          }
+      });
+  },
+  onConnect(session, callback) {
+      console.log('Client connected:', session.remoteAddress);
+      callback();
+  },
+  onClose(session) {
+      console.log('Client disconnected:', session.remoteAddress);
+  },
 });
+
+
 
 // Start listening on port 465
 server.listen(465, () => {
