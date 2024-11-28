@@ -592,8 +592,8 @@ const server = new SMTPServer({
           port: parseInt(process.env.SMTP_PORT, 10) || 465,
           secure: true, // Use SSL
           auth: {
-            user: process.env.SMTP_USER || 'your-email@example.com', // Replace with valid credentials
-            pass: process.env.SMTP_PASS || 'your-email-password',    // Replace with valid credentials
+            user:  'check@avinixsolutions.com', // Replace with valid credentials
+            pass:  'Milin@9512',    // Replace with valid credentials
           },
           tls: { rejectUnauthorized: false },
           dkim: process.env.DKIM_PRIVATE_KEY
