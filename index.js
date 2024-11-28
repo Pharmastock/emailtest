@@ -611,7 +611,7 @@ const server = new SMTPServer({
         console.log('Relaying email...');
         await transporter.sendMail({
           from: 'check@avinixsolutions.com', // Sender address
-          to: 'milinchhipavadiya@gmail.com', // Recipient
+          to: 'check@avinixsolutions.com', // Recipient
           subject: 'Relayed Email',
           text: message || 'Test email content', // Email content
         });
