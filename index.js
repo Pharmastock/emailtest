@@ -542,8 +542,15 @@ const smtpSender = new SMTPServer({
   // tls: {
   //   rejectUnauthorized: false,
   // },
+  onData(stream, session, callback) {
+    console.log('Sending email...');
+    stream.on('end', callback);
+  },
+
+  disabledCommands: ['STARTTLS', 'AUTH PLAIN', 'AUTH LOGIN'], // Disable unnecessary commands
+
   tls: {
-    rejectUnauthorized: false, // Accept self-signed certificates
+    rejectUnauthorized: false, // Allow self-signed certificates
   },
 });
 
