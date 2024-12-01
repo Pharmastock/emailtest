@@ -559,7 +559,7 @@ smtpReceiver.listen(25, () => {
 //   console.log('SMTP server listening on port 465 for sending emails');
 // });
 const smtpSender = new SMTPServer({
-  banner: 'mail.avinixsolutions.com ESMTP Server',
+  banner: 'mail.avinixsolutions.com',
   secure: true,
   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
@@ -607,6 +607,83 @@ const smtpSender = new SMTPServer({
 smtpSender.listen(465, () => {
   console.log('SMTP server listening on port 465 for sending emails');
 });
+
+
+
+
+
+
+
+
+// Step 1: Create SMTP Server to Receive Emails
+const server = new SMTPServer({
+  authOptional: true, // Allow unauthenticated users to send emails
+  onData(stream, session, callback) {
+      let emailData = '';
+      stream.on('data', (chunk) => {
+          emailData += chunk;
+      });
+      stream.on('end', () => {
+          console.log('Received Email Data:');
+          console.log(emailData);
+          callback(null); // Indicate success
+      });
+  },
+  onAuth(auth, session, callback) {
+      // Implement authentication logic if needed
+      if (auth.username === 'test' && auth.password === 'password') {
+          return callback(null, { user: 'test-user' });
+      }
+      return callback(new Error('Authentication failed'));
+  },
+});
+
+server.listen(2525, () => {
+  console.log('SMTP Server is listening on port 2525');
+});
+
+
+
+// Step 2: Function to Send Email using Nodemailer
+async function sendEmail() {
+  // Create a Nodemailer transport
+  const transporter = nodemailer.createTransport({
+      host: 'localhost',
+      port: 2525,
+      secure: false, // Use STARTTLS or plaintext connection
+      tls: {
+          rejectUnauthorized: false, // Allow self-signed certificates
+      },
+  });
+
+  // Email details
+  const mailOptions = {
+      from: '"Sender Name" <check@avinixsolutions.com>',
+      to: 'milinchhipavadiya@gmail.com',
+      subject: 'Test Email',
+      text: 'This is a test email',
+      html: '<b>This is a test email</b>',
+  };
+
+  try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent: ', info.response);
+  } catch (error) {
+      console.error('Error sending email: ', error);
+  }
+}
+
+// Send a test email after the server starts
+setTimeout(() => {
+  sendEmail();
+}, 5000);
+
+
+
+
+
+
+
 
 
 // HTTPS Server
