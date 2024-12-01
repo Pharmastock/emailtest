@@ -638,7 +638,7 @@ const server = new SMTPServer({
   },
 });
 
-server.listen(2525, () => {
+server.listen(587, () => {
   console.log('SMTP Server is listening on port 2525');
 });
 
@@ -649,7 +649,7 @@ async function sendEmail() {
   // Create a Nodemailer transport
   const transporter = nodemailer.createTransport({
       host: 'localhost',
-      port: 2525,
+      port: 587,
       secure: false, // Use STARTTLS or plaintext connection
       tls: {
           rejectUnauthorized: false, // Allow self-signed certificates
@@ -660,8 +660,8 @@ async function sendEmail() {
   const mailOptions = {
       from: '"Sender Name" <check@avinixsolutions.com>',
       to: 'milinchhipavadiya@gmail.com',
-      subject: 'Test Email',
-      text: 'This is a test email',
+      subject: 'Test Email 11111111',
+      text: 'This is a test email 1111',
       html: '<b>This is a test email</b>',
   };
 
