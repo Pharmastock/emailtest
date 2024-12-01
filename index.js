@@ -615,6 +615,45 @@ https.createServer(sslOptions, app).listen(httpsPort, () => {
   console.log(`HTTPS server running on port ${httpsPort}`);
 });
 
+
+
+
+const smtpServer = new SMTPServer({
+  banner: 'Simple Testing SMTP Server',
+  logger: true, // Enable logging for debugging
+  secure: false, // Use a non-secure connection for testing
+  onAuth(auth, session, callback) {
+      console.log(`Authentication request for: ${auth.username}`);
+      // Accept all authentications for testing purposes
+      callback(null, { user: auth.username });
+  },
+  onMailFrom(address, session, callback) {
+      console.log(`Mail from: ${address.address}`);
+      callback(); // Always accept sender for testing
+  },
+  onRcptTo(address, session, callback) {
+      console.log(`Recipient: ${address.address}`);
+      callback(); // Always accept recipients for testing
+  },
+  onData(stream, session, callback) {
+      console.log('Receiving email data...');
+      let emailData = '';
+      stream.on('data', chunk => {
+          emailData += chunk;
+      });
+      stream.on('end', () => {
+          console.log(`Email data received:\n${emailData}`);
+          callback(); // Signal email received successfully
+      });
+  },
+  disabledCommands: ['STARTTLS'], // Simplify setup by disabling TLS
+});
+
+smtpServer.listen(1025, () => {
+  console.log('SMTP server is running on port 1025');
+});
+
+
 // Graceful Shutdown
 process.on('SIGINT', () => {
   console.log('Shutting down...');
