@@ -639,7 +639,7 @@ const server = new SMTPServer({
 });
 
 server.listen(587, () => {
-  console.log('SMTP Server is listening on port 2525');
+  console.log('SMTP Server is listening on port 587');
 });
 
 
@@ -658,7 +658,7 @@ async function sendEmail() {
 
   // Email details
   const mailOptions = {
-      from: '"Sender Name" <check@avinixsolutions.com>',
+      from: 'check@avinixsolutions.com',
       to: 'milinchhipavadiya@gmail.com',
       subject: 'Test Email 11111111',
       text: 'This is a test email 1111',
