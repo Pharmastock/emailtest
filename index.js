@@ -492,44 +492,100 @@ smtpReceiver.listen(25, () => {
 });
 
 
-// Create SMTP server
+// // Create SMTP server
+// const smtpSender = new SMTPServer({
+//   banner: 'mail.avinixsolutions.com ESMTP Server',
+//   secure: true, // TLS enabled
+//   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+//   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+//   ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
+//   onAuth: async (auth, session, callback) => {
+//     try {
+//       const user = await User.findOne({ email: auth.username });
+//       console.log(user, '----------------user')
+//       console.log(auth.password, '----------------auth.password')
+//       console.log(await bcrypt.compare(auth.password, user.hashedSmtpPassword), '----------------await bcrypt.compare(auth.password, user.smtpPassword)')
+//       if (!user) {
+//         return callback(new Error('Invalid credentials: User not found'));
+//       }
+
+//       const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
+//       console.log(isPasswordValid, 'auth.password--------------------------')
+//       // if (!isPasswordValid) {
+//       //     return callback(new Error('Invalid credentials: Incorrect password'));
+//       // }
+//       // Ensure emails are sent from the authenticated user's domain.
+//       console.log('auth.usernameauth.username------------------------', auth.username)
+//       if (!auth.username.endsWith('@avinixsolutions.com')) {
+//         return callback(new Error('Relay access denied'));
+//       }
+
+//       callback(null, { user: auth.username });
+//     } catch (error) {
+//       console.error('Authentication failed:', error);
+//       callback(new Error('Authentication failed'));
+//     }
+//   },
+//   onData(stream, session, callback) {
+//     console.log('here in onData')
+//     stream.pipe(process.stdout); // Print the email to console for demo purposes
+//     stream.on('end', callback);
+//   },
+//   onMailFrom(address, session, callback) {
+//     console.log(`Incoming email from: ${address.address}`);
+//     callback();
+//   },
+//   onRcptTo(address, session, callback) {
+//     console.log(`Outgoing email to: ${address.address}`);
+//     callback();
+//   },
+//   // tls: {
+//   //   rejectUnauthorized: false,
+//   // },
+//   onData(stream, session, callback) {
+//     console.log('Sending email...');
+//     stream.on('end', callback);
+//   },
+
+//   disabledCommands: ['STARTTLS', 'AUTH PLAIN', 'AUTH LOGIN'], // Disable unnecessary commands
+
+//   tls: {
+//     rejectUnauthorized: false, // Allow self-signed certificates
+//   },
+// });
+
+
+// smtpSender.listen(465, () => {
+//   console.log('SMTP server listening on port 465 for sending emails');
+// });
 const smtpSender = new SMTPServer({
   banner: 'mail.avinixsolutions.com ESMTP Server',
-  secure: true, // TLS enabled
+  secure: true,
   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
   ca: fs.readFileSync(path.join(__dirname, 'cert', 'ca_certificate.crt')),
+  authMethods: ['LOGIN'], // Enable login authentication
   onAuth: async (auth, session, callback) => {
     try {
       const user = await User.findOne({ email: auth.username });
-      console.log(user, '----------------user')
-      console.log(auth.password, '----------------auth.password')
-      console.log(await bcrypt.compare(auth.password, user.hashedSmtpPassword), '----------------await bcrypt.compare(auth.password, user.smtpPassword)')
       if (!user) {
         return callback(new Error('Invalid credentials: User not found'));
       }
-
-      const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
-      console.log(isPasswordValid, 'auth.password--------------------------')
+      console.log(user, '------------------------------------------------user')
+      // const isPasswordValid = await bcrypt.compare(auth.password, user.hashedSmtpPassword);
       // if (!isPasswordValid) {
       //     return callback(new Error('Invalid credentials: Incorrect password'));
       // }
-      // Ensure emails are sent from the authenticated user's domain.
-      console.log('auth.usernameauth.username------------------------', auth.username)
-      if (!auth.username.endsWith('@avinixsolutions.com')) {
-        return callback(new Error('Relay access denied'));
-      }
+
+      // if (!auth.username.endsWith('@avinixsolutions.com')) {
+      //   return callback(new Error('Relay access denied'));
+      // }
 
       callback(null, { user: auth.username });
     } catch (error) {
       console.error('Authentication failed:', error);
       callback(new Error('Authentication failed'));
     }
-  },
-  onData(stream, session, callback) {
-    console.log('here in onData')
-    stream.pipe(process.stdout); // Print the email to console for demo purposes
-    stream.on('end', callback);
   },
   onMailFrom(address, session, callback) {
     console.log(`Incoming email from: ${address.address}`);
@@ -539,106 +595,18 @@ const smtpSender = new SMTPServer({
     console.log(`Outgoing email to: ${address.address}`);
     callback();
   },
-  // tls: {
-  //   rejectUnauthorized: false,
-  // },
   onData(stream, session, callback) {
-    console.log('Sending email...');
+    console.log('Processing email data...');
+    stream.pipe(process.stdout);
     stream.on('end', callback);
   },
-
-  disabledCommands: ['STARTTLS', 'AUTH PLAIN', 'AUTH LOGIN'], // Disable unnecessary commands
-
-  tls: {
-    rejectUnauthorized: false, // Allow self-signed certificates
-  },
+  tls: { rejectUnauthorized: false },
+  disabledCommands: ['STARTTLS'], // STARTTLS is disabled as the connection is already secure
 });
-
 
 smtpSender.listen(465, () => {
   console.log('SMTP server listening on port 465 for sending emails');
 });
-
-// const { SMTPServer } = require('smtp-server');
-// const fs = require('fs');aa
-
-// // SSL/TLS credentials
-// const credentials = {
-//   key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
-//   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
-// };
-
-// // Create the SMTP server
-// const server = new SMTPServer({
-//   secure: true, // Ensure secure connection (port 465)
-//   key: credentials.key,
-//   cert: credentials.cert,
-//   authOptional: false, // Enforce authentication
-//   onAuth(auth, session, callback) {
-//     // Replace with proper authentication logic if needed
-//     const mail = 'check@avinixsolutions.com';
-//     console.log()
-//     callback(null, { user: mail });
-//   },
-//   onData(stream, session, callback) {
-//     let message = '';
-//     stream.on('data', (chunk) => {
-//       message += chunk.toString();
-//     });
-//     stream.on('end', async () => {
-//       try {
-//         // Nodemailer transporter configuration
-//         const transporter = nodemailer.createTransport({
-//           host: process.env.SMTP_HOST || 'smtp.gmail.com', // Replace with your SMTP host
-//           port: parseInt(process.env.SMTP_PORT, 10) || 465,
-//           secure: true, // Use SSL
-//           auth: {
-//             user: 'check@avinixsolutions.com', // Replace with valid credentials
-//             pass: 'Milin@9512', // Replace with valid credentials
-//           },
-//           tls: { rejectUnauthorized: false },
-//           dkim: process.env.DKIM_PRIVATE_KEY
-//             ? {
-//                 domainName: 'avinixsolutions.com',
-//                 keySelector: 'default',
-//                 privateKey: process.env.DKIM_PRIVATE_KEY,
-//               }
-//             : undefined,
-//           connectionTimeout: 10000, // 10 seconds
-//           greetingTimeout: 5000, // 5 seconds
-//           socketTimeout: 20000, // 20 seconds
-//         });
-
-//         console.log('Relaying email...');
-//         await transporter.sendMail({
-//           from: 'check@avinixsolutions.com', // Sender address
-//           to: 'milinchhipavadiya@gmail.com', // Recipient
-//           subject: 'Relayed Email',
-//           text: message || 'Test email content', // Email content
-//         });
-//         console.log('Email relayed successfully!');
-//         callback(null); // Accept the message
-//       } catch (error) {
-//         console.error('Failed to relay email:', error.message);
-//         callback(new Error('Failed to send email.'));
-//       }
-//     });
-//   },
-//   onConnect(session, callback) {
-//     console.log(session)
-//     console.log('Client connected:', session.remoteAddress);
-//     callback();
-//   },
-//   onClose(session) {
-//     console.log('Client disconnected:', session.remoteAddress);
-//   },
-// });
-
-// // Start the SMTP server
-// server.listen(465, () => {
-//   console.log('SMTP server is running on port 465');
-// });
-
 
 
 // HTTPS Server
