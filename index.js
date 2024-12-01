@@ -577,6 +577,7 @@ const server = new SMTPServer({
   onAuth(auth, session, callback) {
     // Replace with proper authentication logic if needed
     const mail = 'check@avinixsolutions.com';
+    console.log()
     callback(null, { user: mail });
   },
   onData(stream, session, callback) {
@@ -611,7 +612,7 @@ const server = new SMTPServer({
         console.log('Relaying email...');
         await transporter.sendMail({
           from: 'check@avinixsolutions.com', // Sender address
-          to: 'check@avinixsolutions.com', // Recipient
+          to: 'milinchhipavadiya@gmail.com', // Recipient
           subject: 'Relayed Email',
           text: message || 'Test email content', // Email content
         });

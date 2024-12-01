@@ -70,11 +70,21 @@ exports.sendEmail = async (req, res) => {
                 pass: smtpPassword,
             },
             tls: { rejectUnauthorized: false },
-            dkim: {
+            // dkim: {
+            //     domainName: 'avinixsolutions.com',
+            //     keySelector: 'default',
+            //     privateKey: process.env.DKIM_PRIVATE_KEY,
+            // },
+            dkim: process.env.DKIM_PRIVATE_KEY
+            ? {
                 domainName: 'avinixsolutions.com',
                 keySelector: 'default',
                 privateKey: process.env.DKIM_PRIVATE_KEY,
-            },
+              }
+            : undefined,
+            connectionTimeout: 10000, // 10 seconds
+            greetingTimeout: 5000, // 5 seconds
+            socketTimeout: 20000, // 20 seconds
         });
 
         // Prepare attachments
