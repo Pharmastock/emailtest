@@ -615,70 +615,194 @@ smtpSender.listen(465, () => {
 
 
 
-// Step 1: Create SMTP Server to Receive Emails
-const server = new SMTPServer({
-  authOptional: true, // Allow unauthenticated users to send emails
-  onData(stream, session, callback) {
-      let emailData = '';
-      stream.on('data', (chunk) => {
-          emailData += chunk;
-      });
-      stream.on('end', () => {
-          console.log('Received Email Data:');
-          console.log(emailData);
-          callback(null); // Indicate success
-      });
-  },
-  onAuth(auth, session, callback) {
-      // Implement authentication logic if needed
-      if (auth.username === 'test' && auth.password === 'password') {
-          return callback(null, { user: 'test-user' });
-      }
-      return callback(new Error('Authentication failed'));
-  },
-});
+// // Step 1: Create SMTP Server to Receive Emails
+// const server = new SMTPServer({
+//   authOptional: true, // Allow unauthenticated users to send emails
+//   onData(stream, session, callback) {
+//       let emailData = '';
+//       stream.on('data', (chunk) => {
+//           emailData += chunk;
+//       });
+//       stream.on('end', () => {
+//           console.log('Received Email Data:');
+//           console.log(emailData);
+//           callback(null); // Indicate success
+//       });
+//   },
+//   onAuth(auth, session, callback) {
+//       // Implement authentication logic if needed
+//       if (auth.username === 'test' && auth.password === 'password') {
+//           return callback(null, { user: 'test-user' });
+//       }
+//       return callback(new Error('Authentication failed'));
+//   },
+// });
 
-server.listen(587, () => {
-  console.log('SMTP Server is listening on port 587');
-});
+// server.listen(587, () => {
+//   console.log('SMTP Server is listening on port 587');
+// });
 
 
 
-// Step 2: Function to Send Email using Nodemailer
-async function sendEmail() {
-  // Create a Nodemailer transport
-  const transporter = nodemailer.createTransport({
-      host: 'localhost',
-      port: 587,
-      secure: false, // Use STARTTLS or plaintext connection
-      tls: {
-          rejectUnauthorized: false, // Allow self-signed certificates
-      },
-  });
+// // Step 2: Function to Send Email using Nodemailer
+// async function sendEmail() {
+//   // Create a Nodemailer transport
+//   const transporter = nodemailer.createTransport({
+//       host: 'localhost',
+//       port: 587,
+//       secure: false, // Use STARTTLS or plaintext connection
+//       tls: {
+//           rejectUnauthorized: false, // Allow self-signed certificates
+//       },
+//   });
 
-  // Email details
-  const mailOptions = {
-      from: 'check@avinixsolutions.com',
-      to: 'milinchhipavadiya@gmail.com',
-      subject: 'Test Email 11111111',
-      text: 'This is a test email 1111',
-      html: '<b>This is a test email</b>',
-  };
+//   // Email details
+//   const mailOptions = {
+//       from: 'check@avinixsolutions.com',
+//       to: 'milinchhipavadiya@gmail.com',
+//       subject: 'Test Email 11111111',
+//       text: 'This is a test email 1111',
+//       html: '<b>This is a test email</b>',
+//   };
 
+//   try {
+//       const info = await transporter.sendMail(mailOptions);
+//       console.log('Email sent: ', info.response);
+//   } catch (error) {
+//       console.error('Error sending email: ', error);
+//   }
+// }
+
+// // Send a test email after the server starts
+// setTimeout(() => {
+//   sendEmail();
+// }, 5000);
+
+
+
+
+// const { SMTPServer } = require("smtp-server");
+// const { simpleParser } = require("mailparser");
+// const nodemailer = require("nodemailer");
+
+// Function to handle incoming email data
+function handleData(stream, session, callback) {
+  simpleParser(stream)
+    .then((parsed) => {
+      console.log("Email received:");
+      console.log(`From: ${parsed.from.text}`);
+      console.log(`To: ${parsed.to.text}`);
+      console.log(`Subject: ${parsed.subject}`);
+      console.log(`Text: ${parsed.text}`);
+
+      // Forward the received email (example of sending capability)
+      forwardEmail(parsed);
+    })
+    .catch((err) => {
+      console.error("Error parsing email:", err);
+    })
+    .finally(() => callback());
+}
+
+// Function to handle client connections
+function handleConnect(session, callback) {
+  console.log(`Client connected: ${session.remoteAddress}`);
+  callback(); // Accept the connection
+}
+
+// Function to forward email using Nodemailer
+async function forwardEmail(parsedEmail) {
   try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent: ', info.response);
+    const transporter = nodemailer.createTransport({
+      host: "mail.avinixsolutions.com", // SMTP server for sending
+      port: 587, // SMTP port for sending
+      secure: false, // Use true if the server requires a secure connection (e.g., port 465)
+      auth: {
+        user: "your-email@example.com", // Replace with your SMTP username
+        pass: "your-email-password",   // Replace with your SMTP password
+      },
+    });
+
+    const mailOptions = {
+      from: parsedEmail.from.text, // Sender of the received email
+      to: "recipient@example.com", // Replace with the intended recipient
+      subject: `[Forwarded] ${parsedEmail.subject}`, // Forwarded email subject
+      text: parsedEmail.text, // Plain text body
+      html: parsedEmail.html, // HTML body
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Forwarded email sent: ${info.messageId}`);
   } catch (error) {
-      console.error('Error sending email: ', error);
+    console.error("Error forwarding email:", error);
   }
 }
 
-// Send a test email after the server starts
-setTimeout(() => {
-  sendEmail();
-}, 5000);
+// Function to start the SMTP server
+function startSMTPServer(host, port) {
+  const server = new SMTPServer({
+    onData: handleData,
+    onConnect: handleConnect,
+  });
+
+  server.listen(port, host, () => {
+    console.log(`SMTP server started on ${host}:${port}`);
+  });
+
+  server.on("error", (err) => {
+    console.error("Server error:", err);
+  });
+
+  return server;
+}
+
+// Main function to initialize the server
+function main() {
+  const host = "mail.avinixsolutions.com";
+  const port = 587;
+  startSMTPServer(host, port);
+}
+
+// Run the main function if the script is executed directly
+if (require.main === module) {
+  main();
+}
 
 
+// const nodemailer = require("nodemailer");
+
+async function sendEmail() {
+  try {
+    // Create a transporter
+    const transporter = nodemailer.createTransport({
+      host: "mail.avinixsolutions.com", // Your SMTP server
+      port: 587, // SMTP port
+      secure: false, // Set to true if using port 465
+      auth: {
+        user: "check@avinixsolutions.com", // Your SMTP username
+        pass: "12121",   // Your SMTP password
+      },
+    });
+
+    // Define the email options
+    const mailOptions = {
+      from: "your-email@example.com", // Sender address
+      to: "recipient@example.com",    // List of recipients
+      subject: "Test Email",          // Subject line
+      text: "This is a test email sent from Node.js!", // Plain text body
+      html: "<p>This is a test email sent from <b>Node.js</b>!</p>", // HTML body
+    };
+
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent: ${info.messageId}`);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+}
+
+// Run the function
+sendEmail();
 
 
 

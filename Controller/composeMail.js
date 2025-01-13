@@ -63,8 +63,8 @@ exports.sendEmail = async (req, res) => {
         // Configure nodemailer transporter with DKIM options
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT, 10) || 465,
-            secure: parseInt(process.env.SMTP_PORT, 10) === 465,
+            port: 465,
+            secure:  465,
             auth: {
                 user: user.email,
                 pass: smtpPassword,
